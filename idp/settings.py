@@ -5,7 +5,7 @@ SECRET_KEY = 'jp+hvkp_$@(774h6=zljw1kd+els6q!u8@1agj!=%h*7vt&t=y'
 
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -17,13 +17,17 @@ INSTALLED_APPS = [
     'djangosaml2idp',
 ]
 
-MIDDLEWARE_CLASSES = [
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
+    # 'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -90,7 +94,7 @@ SESSION_COOKIE_NAME = 'sessionid_idp'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
-SAML_IDP_BASE_URL = 'http://localhost:8000/idp'
+SAML_IDP_BASE_URL = 'http://localhost:9000/idp'
 
 SAML_IDP_CONFIG = {
     'debug' : DEBUG,
@@ -108,8 +112,8 @@ SAML_IDP_CONFIG = {
                 ],
             },
             'name_id_format': [NAMEID_FORMAT_EMAILADDRESS, NAMEID_FORMAT_UNSPECIFIED],
-            'sign_response': True,
-            'sign_assertion': True,
+            # 'sign_response': True,
+            # 'sign_assertion': True,
         },
     },
 
@@ -131,14 +135,32 @@ SAML_IDP_CONFIG = {
 # Each key in this dictionary is a SP our IDP will talk to
 
 SAML_IDP_SPCONFIG = {
-    'http://localhost:9000/saml2/metadata': {
+    'http://localhost/saml2/metadata': {
+        'entity_id': 'http://localhost/saml2/metadata',
         'processor': 'djangosaml2idp.processors.BaseProcessor',
+        'nameid_field': 'username',
         'attribute_mapping': {
-            'email': 'email',
-            'first_name': 'first_name',
-            'last_name': 'last_name',
-            'is_staff': 'is_staff',
-            'is_superuser':  'is_superuser',
-        }
-    }
+            'uid': 'username',
+            'mail': 'email',
+            'eduPersonAffiliation': 'role',
+            'givenName': 'first_name',
+            'sn': 'last_name',
+            'displayName': 'display_name',
+        },
+        'assertion_consumer_service': {
+            'url': 'http://localhost/saml2/acs/',
+            'binding': 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
+        },
+        'single_logout_service': {
+            'url': 'http://localhost/saml2/logout/?sls=1/',
+            'binding': 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
+        },
+        'name_id_format': 'urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified',
+        'sign_response': False,
+        'sign_assertion': False,
+        'signing_algorithm': saml2.xmldsig.SIG_RSA_SHA256,
+        'digest_algorithm': saml2.xmldsig.DIGEST_SHA256,
+        'encrypt_saml_responses': False,
+    },
+    'bare_minimum_config': {}
 }
